@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { colors } from '@/constants/colors';
 import { useRouter } from 'expo-router';
-import { useAdminStore } from '@/store/adminStore';
 import DecorativeBorder from '@/components/DecorativeBorder';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
@@ -16,7 +15,6 @@ interface DashboardStats {
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
-  const { signOut, user } = useAdminStore();
   const [stats, setStats] = useState<DashboardStats>({
     totalTracks: 0,
     totalPlaylists: 0,
@@ -52,17 +50,12 @@ export default function AdminDashboardScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    router.replace('/admin/login');
-  };
-
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.welcomeText}>Welcome, Admin</Text>
-          <Text style={styles.emailText}>{user?.email}</Text>
+          <Text style={styles.welcomeText}>Admin Dashboard</Text>
+          <Text style={styles.emailText}>Upload and manage your content</Text>
         </View>
 
         <DecorativeBorder height={30} />
@@ -150,13 +143,6 @@ export default function AdminDashboardScreen() {
             <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
-
-        <DecorativeBorder height={30} />
-
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.7}>
-          <Ionicons name="log-out" size={24} color={colors.error} />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
 
         <View style={styles.spacer} />
       </ScrollView>
@@ -260,23 +246,6 @@ const styles = StyleSheet.create({
   actionButtonSubtitle: {
     fontSize: 14,
     color: colors.textSecondary,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 24,
-    paddingVertical: 16,
-    borderWidth: 2,
-    borderColor: colors.error,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  logoutText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.error,
-    marginLeft: 8,
   },
   spacer: {
     height: 40,
