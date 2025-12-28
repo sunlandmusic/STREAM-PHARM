@@ -1,0 +1,14 @@
+{
+  "buildCommand": "cd sunland && npm install --legacy-peer-deps && npm run build",
+  "outputDirectory": "sunland/dist",
+  "installCommand": "echo 'Dependencies installed in build step'",
+  "devCommand": "cd sunland && expo",
+  "cleanUrls": true,
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/:path*",
+      "destination": "/"
+    }
+  ]
+}
