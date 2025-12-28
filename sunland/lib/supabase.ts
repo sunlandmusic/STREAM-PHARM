@@ -2,26 +2,41 @@ import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const supabaseUrl = Platform.OS === 'web'
-  ? (import.meta.env.VITE_SUPABASE_URL || '')
-  : process.env.VITE_SUPABASE_URL || '';
+const getEnvVar = (key: string): string => {
+  if (Platform.OS === 'web' && typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env[key] || '';
+  }
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key] || '';
+  }
+  return '';
+};
 
-const supabaseAnonKey = Platform.OS === 'web'
-  ? (import.meta.env.VITE_SUPABASE_SUPABASE_ANON_KEY || '')
-  : process.env.VITE_SUPABASE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = getEnvVar('VITE_SUPABASE_URL');
+const supabaseAnonKey = getEnvVar('VITE_SUPABASE_SUPABASE_ANON_KEY');
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables');
+  if (typeof window !== 'undefined') {
+    console.error('Missing Supabase environment variables');
+  }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+const createSupabaseClient = () => {
+  return createClient(
+    supabaseUrl || 'https://placeholder.supabase.co',
+    supabaseAnonKey || 'placeholder-key',
+    {
+      auth: {
+        storage: typeof window !== 'undefined' ? AsyncStorage : undefined as any,
+        autoRefreshToken: true,
+        persistSession: typeof window !== 'undefined',
+        detectSessionInUrl: false,
+      },
+    }
+  );
+};
+
+export const supabase = createSupabaseClient();
 
 export const getAudioUrl = (path: string) => {
   return supabase.storage.from('audio-files').getPublicUrl(path).data.publicUrl;
