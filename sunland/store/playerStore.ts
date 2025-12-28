@@ -1,55 +1,145 @@
 import { create } from 'zustand';
-import { PlayerState } from '@/types';
-import { Platform } from 'react-native';
+import { PlayerState, Track } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-const usePlayerStore = create<PlayerState & {
-  play: (playlistId: string) => void;
+interface PlayerActions {
+  playTrack: (track: Track, queue?: Track[]) => void;
+  playPlaylist: (tracks: Track[], startIndex?: number) => void;
   pause: () => void;
+  resume: () => void;
   toggle: () => void;
-  setVolume: (volume: number) => void;
   skipNext: () => void;
   skipPrevious: () => void;
-}>()(
+  setVolume: (volume: number) => void;
+  toggleShuffle: () => void;
+  setRepeat: (repeat: 'none' | 'all' | 'one') => void;
+  addToQueue: (track: Track) => void;
+  removeFromQueue: (index: number) => void;
+  clearQueue: () => void;
+}
+
+const usePlayerStore = create<PlayerState & PlayerActions>()(
   persist(
     (set, get) => ({
       isPlaying: false,
-      currentPlaylistId: null,
+      currentTrack: null,
+      queue: [],
+      currentIndex: 0,
       volume: 0.8,
-      
-      play: (playlistId: string) => {
-        console.log('Playing playlist:', playlistId);
-        set({ isPlaying: true, currentPlaylistId: playlistId });
+      shuffle: false,
+      repeat: 'none',
+
+      playTrack: (track: Track, queue?: Track[]) => {
+        set({
+          isPlaying: true,
+          currentTrack: track,
+          queue: queue || [track],
+          currentIndex: 0
+        });
       },
-      
+
+      playPlaylist: (tracks: Track[], startIndex: number = 0) => {
+        if (tracks.length === 0) return;
+        set({
+          isPlaying: true,
+          currentTrack: tracks[startIndex],
+          queue: tracks,
+          currentIndex: startIndex
+        });
+      },
+
       pause: () => {
-        console.log('Pausing playback');
         set({ isPlaying: false });
       },
-      
+
+      resume: () => {
+        set({ isPlaying: true });
+      },
+
       toggle: () => {
-        const currentState = get().isPlaying;
-        console.log(currentState ? 'Pausing playback' : 'Resuming playback');
         set(state => ({ isPlaying: !state.isPlaying }));
       },
-      
-      setVolume: (volume: number) => {
-        console.log('Setting volume to:', volume);
-        set({ volume });
-      },
-      
-      // These functions would normally handle track navigation
+
       skipNext: () => {
-        console.log('Skip to next track');
-        // In a real app, this would change the current track
-        // For now, we'll just log the action
+        const { currentIndex, queue, repeat } = get();
+
+        if (repeat === 'one') {
+          return;
+        }
+
+        if (currentIndex < queue.length - 1) {
+          const nextIndex = currentIndex + 1;
+          set({
+            currentIndex: nextIndex,
+            currentTrack: queue[nextIndex]
+          });
+        } else if (repeat === 'all') {
+          set({
+            currentIndex: 0,
+            currentTrack: queue[0]
+          });
+        } else {
+          set({ isPlaying: false });
+        }
       },
-      
+
       skipPrevious: () => {
-        console.log('Skip to previous track');
-        // In a real app, this would change the current track
-        // For now, we'll just log the action
+        const { currentIndex, queue } = get();
+
+        if (currentIndex > 0) {
+          const prevIndex = currentIndex - 1;
+          set({
+            currentIndex: prevIndex,
+            currentTrack: queue[prevIndex]
+          });
+        }
+      },
+
+      setVolume: (volume: number) => {
+        set({ volume: Math.max(0, Math.min(1, volume)) });
+      },
+
+      toggleShuffle: () => {
+        set(state => ({ shuffle: !state.shuffle }));
+      },
+
+      setRepeat: (repeat: 'none' | 'all' | 'one') => {
+        set({ repeat });
+      },
+
+      addToQueue: (track: Track) => {
+        set(state => ({
+          queue: [...state.queue, track]
+        }));
+      },
+
+      removeFromQueue: (index: number) => {
+        set(state => {
+          const newQueue = state.queue.filter((_, i) => i !== index);
+          let newIndex = state.currentIndex;
+
+          if (index < state.currentIndex) {
+            newIndex = state.currentIndex - 1;
+          } else if (index === state.currentIndex) {
+            newIndex = Math.min(newIndex, newQueue.length - 1);
+          }
+
+          return {
+            queue: newQueue,
+            currentIndex: newIndex,
+            currentTrack: newQueue[newIndex] || null
+          };
+        });
+      },
+
+      clearQueue: () => {
+        set({
+          queue: [],
+          currentTrack: null,
+          currentIndex: 0,
+          isPlaying: false
+        });
       },
     }),
     {

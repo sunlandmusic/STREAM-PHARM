@@ -45,11 +45,13 @@ const FeaturedPlaylistCard: React.FC<FeaturedPlaylistCardProps> = ({ playlist })
             {playlist.title}
           </Text>
           <Text style={styles.creator} numberOfLines={1}>
-            {playlist.creator}
+            {playlist.artist?.name || 'SUNLAND MUSIC'}
           </Text>
-          
+
           <View style={styles.statsContainer}>
-            <Text style={styles.stats}>{playlist.tracks} tracks • {playlist.duration}</Text>
+            <Text style={styles.stats}>
+              {playlist.trackCount || 0} tracks • {playlist.totalDuration || '0m'}
+            </Text>
           </View>
         </View>
       </TouchableOpacity>

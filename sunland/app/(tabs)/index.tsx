@@ -1,21 +1,43 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import { colors } from '@/constants/colors';
 import FeaturedPlaylistCard from '@/components/FeaturedPlaylistCard';
 import SectionHeader from '@/components/SectionHeader';
 import CategoryStrip from '@/components/CategoryStrip';
 import SunlandLogo from '@/components/SunlandLogo';
-import { categories, getPlaylistsByCategory } from '@/mocks/playlists';
 import DecorativeBorder from '@/components/DecorativeBorder';
+import PlayerBar from '@/components/PlayerBar';
 import { useRouter } from 'expo-router';
+import { Playlist } from '@/types';
+import { fetchPlaylistsByCategory, getAllCategories } from '@/lib/api';
 
 export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const filteredPlaylists = getPlaylistsByCategory(selectedCategory);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    loadCategories();
+    loadPlaylists('All');
+  }, []);
+
+  const loadCategories = async () => {
+    const cats = await getAllCategories();
+    setCategories(cats);
+  };
+
+  const loadPlaylists = async (category: string) => {
+    setLoading(true);
+    const data = await fetchPlaylistsByCategory(category);
+    setPlaylists(data);
+    setLoading(false);
+  };
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
+    loadPlaylists(category);
   };
 
   const handlePlaylistPress = (id: string) => {
@@ -37,25 +59,28 @@ export default function HomeScreen() {
         <DecorativeBorder />
 
         <SectionHeader title="Playlists" />
-        <View style={styles.playlistsContainer}>
-          {filteredPlaylists.map((playlist) => (
-            <TouchableOpacity 
-              key={playlist.id} 
-              onPress={() => handlePlaylistPress(playlist.id)}
-              activeOpacity={0.7}
-            >
-              <FeaturedPlaylistCard playlist={playlist} />
-            </TouchableOpacity>
-          ))}
-        </View>
-        
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : (
+          <View style={styles.playlistsContainer}>
+            {playlists.map((playlist) => (
+              <TouchableOpacity
+                key={playlist.id}
+                onPress={() => handlePlaylistPress(playlist.id)}
+                activeOpacity={0.7}
+              >
+                <FeaturedPlaylistCard playlist={playlist} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         <View style={styles.spacer} />
       </ScrollView>
-      
-      {/* Fixed decorative border at the bottom */}
-      <View style={styles.fixedBottomBorder}>
-        <DecorativeBorder />
-      </View>
+
+      <PlayerBar />
     </View>
   );
 }
@@ -80,13 +105,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   spacer: {
-    height: 124,
+    height: 150,
   },
-  fixedBottomBorder: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
   }
 });

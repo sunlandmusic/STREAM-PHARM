@@ -25,7 +25,14 @@
       "package": "app.rork.soundstream-player"
     },
     "web": {
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "bundler": "metro",
+      "output": "static",
+      "build": {
+        "babel": {
+          "include": ["@supabase/supabase-js"]
+        }
+      }
     },
     "plugins": [
       [
